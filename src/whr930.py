@@ -156,12 +156,48 @@ def calculate_incoming_checksum(data_raw):
         int_data.append(int.from_bytes(b, "big"))
     return calculate_checksum(int_data)
 
+def strip_byte_array(data_hex):
+    
+    # determine start of data
+    i = 0
+    start = -1
+    for hex in data_hex:
+        if hex != '00':
+            start = i
+            break
+
+        i += 1
+
+    # determine end of data
+    i = 0
+    end = -1
+    for hex in reversed(data_hex):
+        if hex != '00':
+            end = i
+            break
+
+        i += 1
+
+    # if no data found, return first byte (which will be zero)
+    if start == -1:
+        start = 0
+        end = 0
+
+    data = data_hex[start:-end]
+    debug_msg(f"actual data = {data}")
+
+    return data
 
 def validate_data(data_raw):
     """Incoming data is in raw bytes. Convert to hex values for easier processing"""
-    data = []
+    data_hex = []
+
     for raw in data_raw:
-        data.append(raw.hex())
+        data_hex.append(raw.hex())
+
+    # debug_msg(f"hex data is: {data_hex}")
+
+    data = strip_byte_array(data_hex)
 
     if len(data) <= 1:
         """always expect a valid ACK at least"""
@@ -906,15 +942,15 @@ def main():
     global ser
     global pending_commands
 
-    debug = False
-    debug_level = 0
-    warning = False
+    debug = True
+    debug_level = 2
+    warning = True
 
     pending_commands = []
 
     """Connect to the MQTT broker"""
     mqttc = mqtt.Client("whr930")
-    mqttc.username_pw_set(username="myuser", password="mypass")
+    mqttc.username_pw_set(username="mqttpublisher", password="publishmqtt")
 
     """Define the mqtt callbacks"""
     mqttc.on_connect = on_connect
@@ -922,7 +958,7 @@ def main():
     mqttc.on_disconnect = on_disconnect
 
     """Connect to the MQTT server"""
-    mqttc.connect("myhost/ip", port=1883, keepalive=45)
+    mqttc.connect("192.168.178.37", port=1883, keepalive=45)
 
     """Open the serial port"""
     ser = serial.Serial(
@@ -937,14 +973,14 @@ def main():
 
     functions = [
         get_temp,
-        get_ventilation_status,
-        get_filter_status,
-        get_fan_status,
-        get_bypass_control,
-        get_valve_status,
-        get_status,
-        get_operating_hours,
-        get_preheating_status,
+        # get_ventilation_status,
+        # get_filter_status,
+        # get_fan_status,
+        # get_bypass_control,
+        # get_valve_status,
+        # get_status,
+        # get_operating_hours,
+        # get_preheating_status,
     ]
 
     while True:
